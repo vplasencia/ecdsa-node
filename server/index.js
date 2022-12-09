@@ -6,10 +6,15 @@ const port = 3042;
 app.use(cors());
 app.use(express.json());
 
+const {
+  getAddressString,
+  recoverKey,
+} = require("./utils/cryptoUtils.js");
+
 const balances = {
-  "0x1": 100,
-  "0x2": 50,
-  "0x3": 75,
+  "0x45365d06034aa6af1aa0ebeae8746fc4a80c3977": 100,
+  "0xc0e7bf36d8cbe2d9c938244c127b64ecbea78e00": 50,
+  "0xfe3023cdc78dead7724adfb7fc5e6bea6da47e54": 75,
 };
 
 app.get("/balance/:address", (req, res) => {
@@ -19,7 +24,13 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
+  const { signature, recoveryBit, amount, recipient } = req.body;
+
+  // Recover the public key of the wallet that signed the signature
+  const recovered = recoverKey("Transaction", signature, recoveryBit);
+
+  // Get the Ethereum address string
+  const sender = getAddressString(recovered);
 
   setInitialBalance(sender);
   setInitialBalance(recipient);

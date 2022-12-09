@@ -1,6 +1,10 @@
 import { useState } from "react";
 import server from "./server";
 
+import { signMessage } from "../utils/cryptoUtils";
+
+import { toHex } from "ethereum-cryptography/utils";
+
 function Transfer({ address, setBalance }) {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
@@ -10,15 +14,24 @@ function Transfer({ address, setBalance }) {
   async function transfer(evt) {
     evt.preventDefault();
 
+    // Sign the message
+    const signResponse = await signMessage("Transaction", address);
+    // Get the signature and recoveryBit
+    const [signature, recoveryBit] = signResponse;
+
+    // Call the api to execute the transaction 
+    // The signature must be converted to Hexadecimal
     try {
       const {
         data: { balance },
       } = await server.post(`send`, {
-        sender: address,
+        signature: toHex(signature),
+        recoveryBit,
         amount: parseInt(sendAmount),
         recipient,
       });
       setBalance(balance);
+      alert("Successfully transferred");
     } catch (ex) {
       alert(ex.response.data.message);
     }
